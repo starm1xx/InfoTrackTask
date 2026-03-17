@@ -1,6 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 using InfoTrack.Shared.Models;
 using InfoTrack.Api.Data;
+using Microsoft.Extensions.Caching.Memory;
+
 
 namespace InfoTrack.Api.Services;
 
@@ -8,11 +10,13 @@ public class SolicitorScraper : ISolicitorScraper
 {
     private readonly HttpClient _httpClient;
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
-    public SolicitorScraper(HttpClient httpClient, AppDbContext db)
+    public SolicitorScraper(HttpClient httpClient, AppDbContext db, IMemoryCache cache)
     {
         _httpClient = httpClient;
         _db = db;
+        _cache = cache;
 
         _httpClient.DefaultRequestHeaders.Add("User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -28,26 +32,38 @@ public class SolicitorScraper : ISolicitorScraper
 
         foreach (var location in locations)
         {
+            if (_cache.TryGetValue(location, out List<Solicitor> cached))
+            {
+                results.AddRange(cached);
+                continue;
+            }
+
             var formattedLocation = location.ToLower().Replace(" ", "-");
             var url = $"https://www.solicitors.com/{formattedLocation}-solicitors.html";
 
-            Console.WriteLine($"🔍 Requesting: {url}");
+            HttpResponseMessage response;
 
-            var html = await _httpClient.GetStringAsync(url);
-
-            Console.WriteLine("===== HTML START =====");
-            var previewLength = Math.Min(html.Length, 1000);
-            Console.WriteLine(html.Substring(0, previewLength));
-            Console.WriteLine("===== HTML END =====");
-
-            if (!html.Contains("Solicitors"))
+            try
             {
-                Console.WriteLine("⚠️ No expected content found!");
+                response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"⚠️ {url} returned {response.StatusCode}");
+                    continue;
+                }
             }
+            catch
+            {
+                Console.WriteLine($"❌ Failed request: {url}");
+                continue;
+            }
+
+            var html = await response.Content.ReadAsStringAsync();
 
             var parsed = ParseHtml(html, location);
 
-            Console.WriteLine($"✅ Parsed {parsed.Count} results for {location}");
+            _cache.Set(location, parsed, TimeSpan.FromMinutes(10));
 
             results.AddRange(parsed);
         }
@@ -69,8 +85,6 @@ public class SolicitorScraper : ISolicitorScraper
 
     private List<Solicitor> ParseHtml(string html, string location)
     {
-
-
         var list = new List<Solicitor>();
 
         var blocks = html.Split("result-item");

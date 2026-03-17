@@ -3,133 +3,183 @@
 @using InfoTrack.Shared.Models
 @using System.Linq
 
-<h3>Solicitor Search</h3>
+<div class="container">
 
-<label>Select location:</label>
+    <h3 class="title">Solicitor Search</h3>
 
-<select @bind="SelectedLocation">
-    @foreach (var loc in LocationsList)
-    {
-        <option value="@loc">@loc</option>
-    }
-</select>
+    <div class="search-box">
+        <label>Type or select location(s):</label>
 
-<button @onclick="Search" disabled="@IsLoading">Search</button>
+        <div style="position:relative; width:320px;">
 
-@if (!IsLoading && Solicitors != null && !Solicitors.Any())
-{
-    <p>No results found.</p>
-}
+            <input class="input"
+                   placeholder="e.g. London or Oxford"
+                   @bind="SearchText"
+                   @oninput="OnInputChanged"
+                   @onblur="CloseDropdown" />
 
-@if (!string.IsNullOrEmpty(Error))
-{
-    <p style="color:red">@Error</p>
-}
-
-@if (Solicitors != null && Solicitors.Any())
-{
-    <h4>Results (@Solicitors.Count)</h4>
-
-    <table style="border-collapse: collapse; width:100%;" border="1" cellpadding="5">
-        <thead>
-            <tr>
-                <th @onclick='() => SortBy("name")' style="cursor:pointer">
-                    Name @GetSortIcon("name")
-                </th>
-
-                <th @onclick='() => SortBy("location")' style="cursor:pointer">
-                    Location @GetSortIcon("location")
-                </th>
-                <th>Phone</th>
-                <th>Address</th>
-                <th>Website</th>
-                <th>Email</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var s in Solicitors)
+            @if (FilteredLocations.Any())
             {
-                <tr>
-                    <td>
-                        @if (!string.IsNullOrEmpty(s.ProfileUrl))
-                        {
-                            <a href="@s.ProfileUrl" target="_blank">@s.Name</a>
-                        }
-                        else
-                        {
-                            @s.Name
-                        }
-                    </td>
-
-                    <td>@s.Location</td>
-                    <td>@(string.IsNullOrWhiteSpace(s.Phone) ? "N/A" : s.Phone)</td>
-                    <td>@(string.IsNullOrWhiteSpace(s.Address) ? "N/A" : s.Address)</td>
-
-                    <td>
-                        @if (!string.IsNullOrWhiteSpace(s.Website))
-                        {
-                            <a href="@s.Website" target="_blank">Website</a>
-                        }
-                        else
-                        {
-                            <span>N/A</span>
-                        }
-                    </td>
-
-                    <td>
-                        @if (!string.IsNullOrWhiteSpace(s.Email))
-                        {
-                            <a href="@s.Email" target="_blank">Contact</a>
-                        }
-                        else
-                        {
-                            <span>N/A</span>
-                        }
-                    </td>
-                </tr>
+                <div class="dropdown">
+                    @foreach (var loc in FilteredLocations)
+                    {
+                        <div class="dropdown-item"
+                             @onclick="() => AddLocation(loc)">
+                            @loc
+                        </div>
+                    }
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
 
-    <h4>Insights</h4>
+        <button class="button" @onclick="Search" disabled="@IsLoading">
+            Search
+        </button>
+    </div>
 
-    <p><b>Total:</b> @Solicitors.Count</p>
+    <!-- SELECTED TAGS -->
+    <div class="selected-tags">
+        @foreach (var loc in SelectedLocations)
+        {
+            <span class="tag">
+                @loc
+                <span class="remove" @onclick="() => RemoveLocation(loc)">×</span>
+            </span>
+        }
+    </div>
 
-    @foreach (var group in Solicitors.GroupBy(x => x.Location))
+    @if (IsLoading)
     {
-        <p>@group.Key: @group.Count()</p>
+        <p><i>Loading data...</i></p>
     }
 
-    <h5>Data Quality</h5>
-
-    <p>Missing Phones: @Solicitors.Count(x => x.Phone == "N/A")</p>
-    <p>Missing Websites: @Solicitors.Count(x => string.IsNullOrEmpty(x.Website))</p>
-    <p>Missing Address: @Solicitors.Count(x => string.IsNullOrEmpty(x.Address))</p>
-
-    <h5>Duplicates</h5>
-
-    @foreach (var dup in Solicitors
-            .GroupBy(x => x.Name)
-            .Where(g => g.Count() > 1))
+    @if (!string.IsNullOrEmpty(Error))
     {
-        <p>@dup.Key (@dup.Count())</p>
+        <p style="color:red">@Error</p>
     }
-}
+
+    @if (!IsLoading && !Solicitors.Any() && string.IsNullOrEmpty(Error))
+    {
+        <p>No results found.</p>
+    }
+
+    @if (Solicitors.Any())
+    {
+        <h4>Results (@Solicitors.Count)</h4>
+
+        <label>Rows per page:</label>
+        <select @bind="PageSize">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+        </select>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th @onclick='() => SortBy("name")'>
+                        Name @GetSortIcon("name")
+                    </th>
+
+                    <th @onclick='() => SortBy("location")'>
+                        Location @GetSortIcon("location")
+                    </th>
+
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Website</th>
+                    <th>Contact</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var s in PagedSolicitors)
+                {
+                    <tr>
+                        <td>
+                            <a class="link" href="@s.ProfileUrl" target="_blank">
+                                @s.Name
+                            </a>
+                        </td>
+
+                        <td>@s.Location</td>
+                        <td>@(string.IsNullOrWhiteSpace(s.Phone) ? "N/A" : s.Phone)</td>
+                        <td>@(string.IsNullOrWhiteSpace(s.Address) ? "N/A" : s.Address)</td>
+
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(s.Website))
+                            {
+                                <a class="link" href="@s.Website" target="_blank">Website</a>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(s.Email))
+                            {
+                                <a class="link" href="@s.Email" target="_blank">Contact</a>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <button @onclick="PrevPage" disabled="@(CurrentPage == 1)">Previous</button>
+
+            <span>Page @CurrentPage of @TotalPages</span>
+
+            <button @onclick="NextPage" disabled="@(CurrentPage == TotalPages)">Next</button>
+        </div>
+
+        <div class="insights">
+            <h4>Insights</h4>
+
+            <p><b>Total:</b> @Solicitors.Count</p>
+
+            <h5>By Location</h5>
+            @foreach (var item in LocationStats)
+            {
+                <p>@item.Key: @item.Value</p>
+            }
+
+            <h5>Data Quality</h5>
+
+            <p>Missing Phones: @MissingPhones</p>
+            <p>Missing Emails: @MissingEmails</p>
+            <p>Missing Websites: @MissingWebsites</p>
+            <p>Missing Addresses: @MissingAddresses</p>
+
+            <p><b>Complete Records:</b> @CompleteRecords</p>
+
+            <h5>Duplicates</h5>
+            @foreach (var dup in Duplicates)
+            {
+                <p>@dup.Key (@dup.Count())</p>
+            }
+        </div>
+    }
+
+</div>
 
 @code {
     private List<string> LocationsList = new()
     {
-        "London",
-        "Birmingham",
-        "Leeds",
-        "Manchester",
-        "Sheffield",
-        "Bradford",
-        "Liverpool",
-        "Bristol"
+        "London", "Birmingham", "Leeds", "Manchester",
+        "Sheffield", "Bradford", "Liverpool", "Bristol"
     };
 
-    private string SelectedLocation = "London";
+    private string SearchText = "";
+    private List<string> FilteredLocations = new();
+    private List<string> SelectedLocations = new();
 
     private List<Solicitor> Solicitors = new();
 
@@ -139,17 +189,133 @@
     private string sortColumn = "name";
     private bool ascending = true;
 
+    private int CurrentPage = 1;
+    private int _pageSize = 10;
+
+    private int PageSize
+    {
+        get => _pageSize;
+        set
+        {
+            _pageSize = value;
+            CurrentPage = 1;
+        }
+    }
+
+    private IEnumerable<Solicitor> PagedSolicitors =>
+        Solicitors
+            .Skip(Math.Max(0, (CurrentPage - 1) * PageSize))
+            .Take(PageSize);
+
+    private int TotalPages =>
+        (int)Math.Ceiling((double)Solicitors.Count / PageSize);
+
+    private Dictionary<string, int> LocationStats =>
+        Solicitors
+            .GroupBy(x => x.Location)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+    private int MissingPhones =>
+Solicitors.Count(x => string.IsNullOrWhiteSpace(x.Phone) || x.Phone == "N/A");
+
+    private int MissingEmails =>
+        Solicitors.Count(x => string.IsNullOrWhiteSpace(x.Email));
+
+    private int MissingWebsites =>
+        Solicitors.Count(x => string.IsNullOrWhiteSpace(x.Website));
+
+    private int MissingAddresses =>
+        Solicitors.Count(x => string.IsNullOrWhiteSpace(x.Address));
+
+    private int CompleteRecords =>
+        Solicitors.Count(x =>
+            !string.IsNullOrWhiteSpace(x.Phone) &&
+            x.Phone != "N/A" &&
+            !string.IsNullOrWhiteSpace(x.Email) &&
+            !string.IsNullOrWhiteSpace(x.Website) &&
+            !string.IsNullOrWhiteSpace(x.Address));
+
+    private IEnumerable<IGrouping<string, Solicitor>> Duplicates =>
+        Solicitors
+            .GroupBy(x => x.Name)
+            .Where(g => g.Count() > 1);
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        SearchText = "London";
+        await Search();
+    }
+
+    private void OnInputChanged(ChangeEventArgs e)
+    {
+        SearchText = e.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            FilteredLocations.Clear();
+            return;
+        }
+
+        FilteredLocations = LocationsList
+            .Where(x => x.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void AddLocation(string location)
+    {
+        if (!SelectedLocations.Contains(location))
+            SelectedLocations.Add(location);
+
+        SearchText = "";
+        FilteredLocations.Clear();
+    }
+
+    private void RemoveLocation(string location)
+    {
+        SelectedLocations.Remove(location);
+    }
+
+    private void CloseDropdown()
+    {
+        Task.Delay(200).ContinueWith(_ =>
+        {
+            FilteredLocations.Clear();
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
     private async Task Search()
     {
         try
         {
             IsLoading = true;
             Error = null;
+            CurrentPage = 1;
+
+            var locationsToSearch = new List<string>();
+
+            if (SelectedLocations.Any())
+                locationsToSearch.AddRange(SelectedLocations);
+
+            if (!string.IsNullOrWhiteSpace(SearchText))
+                locationsToSearch.Add(SearchText);
+
+            if (!locationsToSearch.Any())
+            {
+                Error = "Please enter at least one location.";
+                return;
+            }
+
+            var query = string.Join(",", locationsToSearch);
 
             var result = await Http.GetFromJsonAsync<List<Solicitor>>(
-                $"https://localhost:7277/api/solicitors?locations={SelectedLocation}");
+                $"https://localhost:7277/api/solicitors?locations={query}");
 
             Solicitors = result ?? new List<Solicitor>();
+
+            if (!Solicitors.Any())
+                Error = "No results found.";
         }
         catch
         {
@@ -159,6 +325,18 @@
         {
             IsLoading = false;
         }
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages)
+            CurrentPage++;
+    }
+
+    private void PrevPage()
+    {
+        if (CurrentPage > 1)
+            CurrentPage--;
     }
 
     private void SortBy(string column)
@@ -185,11 +363,6 @@
         };
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await Search();
-    }
-
     private string GetSortIcon(string column)
     {
         if (sortColumn != column)
@@ -197,4 +370,5 @@
 
         return ascending ? "↑" : "↓";
     }
+
 }

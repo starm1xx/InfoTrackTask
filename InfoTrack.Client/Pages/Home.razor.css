@@ -1,0 +1,147 @@
+﻿.container {
+    max-width: 1100px;
+    margin: 40px auto;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #1f2937;
+}
+
+.title {
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.input {
+    width: 320px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+    .input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+.button {
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+    .button:hover {
+        background-color: #1d4ed8;
+    }
+
+    .button:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+    }
+
+.dropdown {
+    position: absolute;
+    top: 42px;
+    left: 0;
+    width: 320px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .dropdown-item:hover {
+        background-color: #f3f4f6;
+    }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+    .table th {
+        background-color: #f9fafb;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .table tr:hover {
+        background-color: #f9fafb;
+    }
+
+.link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .pagination button {
+        padding: 8px 14px;
+        border: 1px solid #d1d5db;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .pagination button:hover {
+            background: #f3f4f6;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+.insights {
+    margin-top: 30px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
