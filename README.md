@@ -196,40 +196,66 @@ GET /api/solicitors?locations=London,Birmingham,...
 
 
 
-\## 🚀 How to Run
+🚀 Running the Application
 
+This solution contains three projects:
 
+InfoTrack.Api – ASP.NET Core Web API (data scraping + in-memory database)
 
-\### 1. Run API
+InfoTrack.Client – Blazor Web UI
 
+InfoTrack.Shared – shared models between API and Client
 
+▶️ Run both API and Client together (Recommended)
 
-Set `InfoTrack.Api` as startup project and run:
+The solution is configured to run both projects at the same time using Visual Studio.
 
+Steps:
 
+Open the solution in Visual Studio
 
-https://localhost:7277
+Right-click the solution → click Set Startup Projects
 
+Select:
 
+Multiple startup projects
 
-\---
+Set the following configuration:
 
+InfoTrack.Api      → Start
+InfoTrack.Client   → Start
+InfoTrack.Shared   → None
 
+Click Apply
 
-\### 2. Run Client
+Press F5 or click Run
 
+🌐 What happens after running
 
+The API starts (e.g. https://localhost:7277)
 
-Set `InfoTrack.Client` as startup project and run (port may vary):
+The Blazor UI starts in the browser
 
+The UI automatically sends requests to the API
 
+Data is scraped, stored in memory, and displayed in the table
 
-https://localhost:xxxx
+⚠️ Notes
 
+Ensure both projects are using HTTPS
 
+If API port changes, update the API URL in the Client
 
-\---
+First load may take a few seconds due to scraping
 
+No external database is required (uses in-memory DB)
+
+🛠 Alternative: Run via CLI
+
+If you prefer running manually:
+
+dotnet run --project InfoTrack.Api
+dotnet run --project InfoTrack.Client
 
 
 \### 3. Use the App
