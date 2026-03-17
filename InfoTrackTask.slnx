@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="InfoTrack.Api/InfoTrack.Api.csproj" />
+  <Project Path="InfoTrack.Client/InfoTrack.Client.csproj" />
+  <Project Path="InfoTrack.Shared/InfoTrack.Shared.csproj" />
+</Solution>

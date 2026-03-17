@@ -1,0 +1,43 @@
+# Build folders
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider / VSCode
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if ever used)
+node_modules/
+
+# Blazor WASM build
+wwwroot/_framework/
+
+# User secrets
+secrets.json
+
+# Publish output
+publish/
+dist/
+
+# EF Core
+*.db
+*.sqlite
+
+# Temporary files
+*.tmp
+*.temp
+
+# NuGet
+*.nupkg

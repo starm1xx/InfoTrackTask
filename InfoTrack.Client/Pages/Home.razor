@@ -1,0 +1,200 @@
+﻿@page "/"
+@inject HttpClient Http
+@using InfoTrack.Shared.Models
+@using System.Linq
+
+<h3>Solicitor Search</h3>
+
+<label>Select location:</label>
+
+<select @bind="SelectedLocation">
+    @foreach (var loc in LocationsList)
+    {
+        <option value="@loc">@loc</option>
+    }
+</select>
+
+<button @onclick="Search" disabled="@IsLoading">Search</button>
+
+@if (!IsLoading && Solicitors != null && !Solicitors.Any())
+{
+    <p>No results found.</p>
+}
+
+@if (!string.IsNullOrEmpty(Error))
+{
+    <p style="color:red">@Error</p>
+}
+
+@if (Solicitors != null && Solicitors.Any())
+{
+    <h4>Results (@Solicitors.Count)</h4>
+
+    <table style="border-collapse: collapse; width:100%;" border="1" cellpadding="5">
+        <thead>
+            <tr>
+                <th @onclick='() => SortBy("name")' style="cursor:pointer">
+                    Name @GetSortIcon("name")
+                </th>
+
+                <th @onclick='() => SortBy("location")' style="cursor:pointer">
+                    Location @GetSortIcon("location")
+                </th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Website</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Solicitors)
+            {
+                <tr>
+                    <td>
+                        @if (!string.IsNullOrEmpty(s.ProfileUrl))
+                        {
+                            <a href="@s.ProfileUrl" target="_blank">@s.Name</a>
+                        }
+                        else
+                        {
+                            @s.Name
+                        }
+                    </td>
+
+                    <td>@s.Location</td>
+                    <td>@(string.IsNullOrWhiteSpace(s.Phone) ? "N/A" : s.Phone)</td>
+                    <td>@(string.IsNullOrWhiteSpace(s.Address) ? "N/A" : s.Address)</td>
+
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(s.Website))
+                        {
+                            <a href="@s.Website" target="_blank">Website</a>
+                        }
+                        else
+                        {
+                            <span>N/A</span>
+                        }
+                    </td>
+
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(s.Email))
+                        {
+                            <a href="@s.Email" target="_blank">Contact</a>
+                        }
+                        else
+                        {
+                            <span>N/A</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4>Insights</h4>
+
+    <p><b>Total:</b> @Solicitors.Count</p>
+
+    @foreach (var group in Solicitors.GroupBy(x => x.Location))
+    {
+        <p>@group.Key: @group.Count()</p>
+    }
+
+    <h5>Data Quality</h5>
+
+    <p>Missing Phones: @Solicitors.Count(x => x.Phone == "N/A")</p>
+    <p>Missing Websites: @Solicitors.Count(x => string.IsNullOrEmpty(x.Website))</p>
+    <p>Missing Address: @Solicitors.Count(x => string.IsNullOrEmpty(x.Address))</p>
+
+    <h5>Duplicates</h5>
+
+    @foreach (var dup in Solicitors
+            .GroupBy(x => x.Name)
+            .Where(g => g.Count() > 1))
+    {
+        <p>@dup.Key (@dup.Count())</p>
+    }
+}
+
+@code {
+    private List<string> LocationsList = new()
+    {
+        "London",
+        "Birmingham",
+        "Leeds",
+        "Manchester",
+        "Sheffield",
+        "Bradford",
+        "Liverpool",
+        "Bristol"
+    };
+
+    private string SelectedLocation = "London";
+
+    private List<Solicitor> Solicitors = new();
+
+    private bool IsLoading = false;
+    private string? Error;
+
+    private string sortColumn = "name";
+    private bool ascending = true;
+
+    private async Task Search()
+    {
+        try
+        {
+            IsLoading = true;
+            Error = null;
+
+            var result = await Http.GetFromJsonAsync<List<Solicitor>>(
+                $"https://localhost:7277/api/solicitors?locations={SelectedLocation}");
+
+            Solicitors = result ?? new List<Solicitor>();
+        }
+        catch
+        {
+            Error = "Failed to load data";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+            ascending = !ascending;
+        else
+        {
+            sortColumn = column;
+            ascending = true;
+        }
+
+        Solicitors = column switch
+        {
+            "name" => ascending
+                ? Solicitors.OrderBy(x => x.Name).ToList()
+                : Solicitors.OrderByDescending(x => x.Name).ToList(),
+
+            "location" => ascending
+                ? Solicitors.OrderBy(x => x.Location).ToList()
+                : Solicitors.OrderByDescending(x => x.Location).ToList(),
+
+            _ => Solicitors
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Search();
+    }
+
+    private string GetSortIcon(string column)
+    {
+        if (sortColumn != column)
+            return "";
+
+        return ascending ? "↑" : "↓";
+    }
+}
